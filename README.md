@@ -1,4 +1,4 @@
-<img width="1376" height="736" alt="Doctor-Patient Communication  Demo" src="https://github.com/user-attachments/assets/b6b52444-c191-45c7-bb3c-135d96339727" />#  Salesforce Real-Time Doctor–Patient Communication System using Platform Event Architecture
+#  Salesforce Real-Time Doctor–Patient Communication System using Platform Event Architecture
 
 A real-time healthcare communication solution built on the Salesforce Platform using **Platform Event Architecture**. This application enables secure and instant communication between doctors and patients while providing intelligent appointment reminders, patient medical history tracking, live online/offline presence monitoring, and an integrated medical report dashboard.
 
