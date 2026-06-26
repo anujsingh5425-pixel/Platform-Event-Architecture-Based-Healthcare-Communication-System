@@ -1,0 +1,413 @@
+<template>
+    <!-- Main Chat Container -->
+    <div class="chat-wrapper">
+        <!-- Chat Section -->
+        <div class="chat-section">
+            <lightning-card title="Doctor Chat Window">
+                <!-- APPOINTMENT REMINDER -->
+                <template if:true={nearestAppointment}>
+                    <div class="appointment-card">
+                        <lightning-icon icon-name="utility:event" size="small"></lightning-icon>
+                        <div class="appointment-content">
+                            <div class="appointment-title">Upcoming Appointment Reminder</div>
+                            <div class="appointment-text">
+                                Your upcoming appointment with <strong>{appointmentPatientName}</strong> is scheduled for <strong>{appointmentTime}</strong>.
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- START SCREEN -->
+                <template if:false={isChatOpen}>
+                    <div class="start-chat-container">
+                        <lightning-button label="Chat With Patient" variant="brand" onclick={handleOpenChat}>
+                        </lightning-button>
+                    </div>
+                </template>
+
+                <!-- CHAT WINDOW -->
+                <template if:true={isChatOpen}>
+                    <div class="chat-container">
+                        <!-- HEADER -->
+                        <div class="header-section">
+                            <div class="doctor-header">
+                                <div class="doctor-details">
+                                    <template if:false={patientSelected}>
+                                        <h1 class="doctor-name">{doctorName}</h1>
+                                        <p class="specialization">{specialization}</p>
+                                    </template>
+                                    <template if:true={patientSelected}>
+                                        <h1 class="doctor-name">{selectedPatientName}</h1>
+                                        <template if:true={patientOnline}>
+                                            <p class="specialization active-patient">● Active Patient</p>
+                                        </template>
+                                    </template>
+                                </div>
+                                <div class="header-right">
+                                    <div class={statusClass}>
+                                        <span class={statusDotClass}></span>
+                                        <span>{patientStatusText}</span>
+                                    </div>
+                                    <lightning-button label="End Chat" variant="destructive" onclick={handleEndChat}>
+                                    </lightning-button>
+                                    <!-- Patient Report Button -->
+                                    <template if:true={selectedPatientId}>
+    <lightning-button label="Patient Report" variant="brand" onclick={handleOpenReport}>
+    </lightning-button>
+</template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PATIENT PICKER -->
+                        <template if:false={patientSelected}>
+                            <div class="picker-section">
+                                <lightning-record-picker label="Select Patient" object-api-name="Patient__c" onchange={handlePatientChange}>
+                                </lightning-record-picker>
+                            </div>
+                        </template>
+
+                        <!-- CHAT BODY -->
+                        <div class="chat-body">
+                            <template for:each={messages} for:item="msg">
+                                <div key={msg.id} class={msg.cssClass}>
+                                    {msg.message}
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- MESSAGE BOX -->
+                        <div class="chat-footer">
+                            <lightning-textarea value={messageText} onchange={handleMessageChange} placeholder="Type your message...">
+                            </lightning-textarea>
+                            <div class="send-button">
+                                <lightning-button label="Send" variant="brand" onclick={handleSendMessage}>
+                                </lightning-button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </lightning-card>
+        </div>
+
+        <!-- Patient Report Drawer -->
+        <template if:true={showReportDrawer}>
+            <div class="report-drawer-overlay" onclick={handleCloseReport}></div>
+            <div class="report-drawer">
+                <div class="drawer-header">
+                    <h2>Patient Report</h2>
+                    <lightning-button label="Close" variant="destructive" onclick={handleCloseReport}>
+                    </lightning-button>
+                </div>
+                <div class="drawer-body">
+                    <template if:true={isReportLoading}>
+                        <div class="loading-spinner">Loading...</div>
+                    </template>
+                    <template if:true={reportError}>
+                        <div class="error-message">{reportError}</div>
+                    </template>
+                    <template if:true={reportData}>
+                        <!-- Patient Profile -->
+                        <template if:true={showPatientProfile}>
+                            <div class="section-header" onclick={toggleSection} data-section="patientProfile">
+                                ▼ PATIENT PROFILE
+                            </div>
+                            <div class="section-content">
+                                <template if:true={reportData.patientName}>
+                                    <div class="field-row clickable" onclick={handlePatientNameClick}>
+                                        <span class="field-label">Patient Name:</span>
+                                        <span class="field-value">{reportData.patientName}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.patientId}>
+                                    <div class="field-row clickable" onclick={handlePatientIdClick}>
+                                        <span class="field-label">Patient ID:</span>
+                                        <span class="field-value">{reportData.patientId}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.mrnNumber}>
+                                    <div class="field-row clickable" onclick={handleMrnClick}>
+                                        <span class="field-label">MRN Number:</span>
+                                        <span class="field-value">{reportData.mrnNumber}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.age}>
+                                    <div class="field-row">
+                                        <span class="field-label">Age:</span>
+                                        <span class="field-value">{reportData.age}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.gender}>
+                                    <div class="field-row">
+                                        <span class="field-label">Gender:</span>
+                                        <span class="field-value">{reportData.gender}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.phone}>
+                                    <div class="field-row">
+                                        <span class="field-label">Phone:</span>
+                                        <span class="field-value">{reportData.phone}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.email}>
+                                    <div class="field-row">
+                                        <span class="field-label">Email:</span>
+                                        <span class="field-value">{reportData.email}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Health Summary -->
+                        <template if:true={showHealthSummary}>
+                            <div class="section-header" onclick={toggleSection} data-section="healthSummary">
+                                ▼ HEALTH SUMMARY
+                            </div>
+                            <div class="section-content">
+                                <template if:true={reportData.riskLevel}>
+                                    <div class="field-row">
+                                        <span class="field-label">Risk Level:</span>
+                                        <span class="field-value risk-{reportData.riskLevel}">{reportData.riskLevel}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.severity}>
+                                    <div class="field-row">
+                                        <span class="field-label">Severity:</span>
+                                        <span class="field-value">{reportData.severity}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.symptoms}>
+                                    <div class="field-row">
+                                        <span class="field-label">Symptoms:</span>
+                                        <span class="field-value">{reportData.symptoms}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.existingConditions}>
+                                    <div class="field-row">
+                                        <span class="field-label">Existing Conditions:</span>
+                                        <span class="field-value">{reportData.existingConditions}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.allergies}>
+                                    <div class="field-row">
+                                        <span class="field-label">Allergies:</span>
+                                        <span class="field-value">{reportData.allergies}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.currentMedications}>
+                                    <div class="field-row">
+                                        <span class="field-label">Current Medications:</span>
+                                        <span class="field-value">{reportData.currentMedications}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Current Vitals -->
+                        <template if:true={showCurrentVitals}>
+                            <div class="section-header" onclick={toggleSection} data-section="currentVitals">
+                                ▼ CURRENT VITALS
+                            </div>
+                            <div class="section-content">
+                                <template if:true={reportData.bloodPressure}>
+                                    <div class="field-row">
+                                        <span class="field-label">Blood Pressure:</span>
+                                        <span class="field-value">{reportData.bloodPressure}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.sugarLevel}>
+                                    <div class="field-row">
+                                        <span class="field-label">Sugar Level:</span>
+                                        <span class="field-value">{reportData.sugarLevel}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.heartRate}>
+                                    <div class="field-row">
+                                        <span class="field-label">Heart Rate:</span>
+                                        <span class="field-value">{reportData.heartRate}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.bodyTemperature}>
+                                    <div class="field-row">
+                                        <span class="field-label">Body Temperature:</span>
+                                        <span class="field-value">{reportData.bodyTemperature}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.oxygenSaturation}>
+                                    <div class="field-row">
+                                        <span class="field-label">Oxygen Saturation:</span>
+                                        <span class="field-value">{reportData.oxygenSaturation}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.bmi}>
+                                    <div class="field-row">
+                                        <span class="field-label">BMI:</span>
+                                        <span class="field-value">{reportData.bmi}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.height}>
+                                    <div class="field-row">
+                                        <span class="field-label">Height:</span>
+                                        <span class="field-value">{reportData.height}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.weight}>
+                                    <div class="field-row">
+                                        <span class="field-label">Weight:</span>
+                                        <span class="field-value">{reportData.weight}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.cholesterol}>
+                                    <div class="field-row">
+                                        <span class="field-label">Cholesterol:</span>
+                                        <span class="field-value">{reportData.cholesterol}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- AI Assessment -->
+                        <template if:true={showAIAssessment}>
+                            <div class="section-header" onclick={toggleSection} data-section="aiAssessment">
+                                ▼ AI ASSESSMENT
+                            </div>
+                            <div class="section-content">
+                                <template if:true={reportData.aiRiskPrediction}>
+                                    <div class="field-row">
+                                        <span class="field-label">AI Risk Prediction:</span>
+                                        <span class="field-value">{reportData.aiRiskPrediction}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.aiRiskScore}>
+                                    <div class="field-row">
+                                        <span class="field-label">AI Risk Score:</span>
+                                        <span class="field-value">{reportData.aiRiskScore}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.suggestedDoctorType}>
+                                    <div class="field-row">
+                                        <span class="field-label">Suggested Doctor Type:</span>
+                                        <span class="field-value">{reportData.suggestedDoctorType}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.recommendation}>
+                                    <div class="field-row">
+                                        <span class="field-label">Recommendation:</span>
+                                        <span class="field-value">{reportData.recommendation}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.aiExplanation}>
+                                    <div class="field-row">
+                                        <span class="field-label">AI Explanation:</span>
+                                        <span class="field-value">{reportData.aiExplanation}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Lifestyle -->
+                        <template if:true={showLifestyle}>
+                            <div class="section-header" onclick={toggleSection} data-section="lifestyle">
+                                ▼ LIFESTYLE
+                            </div>
+                            <div class="section-content">
+                                <template if:true={reportData.smokingStatus}>
+                                    <div class="field-row">
+                                        <span class="field-label">Smoking Status:</span>
+                                        <span class="field-value">{reportData.smokingStatus}</span>
+                                    </div>
+                                </template>
+                                <template if:true={reportData.alcoholConsumption}>
+                                    <div class="field-row">
+                                        <span class="field-label">Alcohol Consumption:</span>
+                                        <span class="field-value">{reportData.alcoholConsumption}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Medical Reports -->
+                        <template if:true={showMedicalReports}>
+                            <div class="section-header" onclick={toggleSection} data-section="medicalReports">
+                                ▼ MEDICAL REPORTS ({medicalReportsCount})
+                            </div>
+                            <div class="section-content">
+                                <template for:each={reportData.medicalReports} for:item="report">
+                                    <div key={report.mrnNumber} class="report-item">
+                                        <template if:true={report.mrnNumber}>
+                                            <div class="field-row clickable" onclick={handleReportClick}>
+                                                <span class="field-label">MRN:</span>
+                                                <span class="field-value">{report.mrnNumber}</span>
+                                            </div>
+                                        </template>
+                                        <template if:true={report.reportDate}>
+                                            <div class="field-row">
+                                                <span class="field-label">Date:</span>
+                                                <span class="field-value">{report.reportDate}</span>
+                                            </div>
+                                        </template>
+                                        <template if:true={report.bloodPressure}>
+                                            <div class="field-row">
+                                                <span class="field-label">BP:</span>
+                                                <span class="field-value">{report.bloodPressure}</span>
+                                            </div>
+                                        </template>
+                                        <template if:true={report.sugarLevel}>
+                                            <div class="field-row">
+                                                <span class="field-label">Sugar:</span>
+                                                <span class="field-value">{report.sugarLevel}</span>
+                                            </div>
+                                        </template>
+                                        <template if:true={report.notes}>
+                                            <div class="field-row">
+                                                <span class="field-label">Notes:</span>
+                                                <span class="field-value">{report.notes}</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Medication Tracking -->
+                        <template if:true={showMedicationTracking}>
+                            <div class="section-header" onclick={toggleSection} data-section="medicationTracking">
+                                ▼ MEDICATION TRACKING ({medicationTrackingCount})
+                            </div>
+                            <div class="section-content">
+                                <template for:each={reportData.medicationTracking} for:item="med">
+                                    <div key={med.medicineName} class="medication-item">
+                                        <template if:true={med.medicineName}>
+                                            <div class="field-row">
+                                                <span class="field-label">Medicine:</span>
+                                                <span class="field-value">{med.medicineName}</span>
+                                            </div>
+                                        </template>
+                                        <template if:true={med.dosage}>
+                                            <div class="field-row">
+                                                <span class="field-label">Dosage:</span>
+                                                <span class="field-value">{med.dosage}</span>
+                                            </div>
+                                        </template>
+                                        <template if:true={med.takenToday}>
+                                            <div class="field-row">
+                                                <span class="field-label">Taken Today:</span>
+                                                <span class="field-value">{med.takenToday ? 'Yes' : 'No'}</span>
+                                            </div>
+                                        </template>
+                                        <template if:true={med.lastTakenDate}>
+                                            <div class="field-row">
+                                                <span class="field-label">Last Taken:</span>
+                                                <span class="field-value">{med.lastTakenDate}</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>
