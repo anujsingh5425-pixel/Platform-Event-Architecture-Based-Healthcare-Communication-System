@@ -1,0 +1,239 @@
+<template>
+
+    <lightning-card title="Patient Chat Window">
+ 
+
+<template if:false={isChatOpen}>
+    
+    
+   
+<div class="inbox-container">
+
+    <lightning-button-icon
+        icon-name="utility:email"
+        alternative-text="Inbox"
+        title="Inbox"
+        onclick={handleInboxClick}
+        class="inbox-icon">
+    </lightning-button-icon>
+
+    <template if:true={hasUnreadMessage}>
+        <span class="notification-badge">
+            {unreadCount}
+        </span>
+    </template>
+
+    <template if:true={showInbox}>
+        <div class="inbox-popup">
+
+            <div class="popup-header">
+                Inbox
+            </div>
+
+            <template
+                for:each={notifications}
+                for:item="item">
+
+                <div
+                    key={item.id}
+                    class="message-row">
+
+                    <div class="doctor-name">
+                       {item.doctorName}
+                    </div>
+
+                    <div class="message-text">
+                        {item.message}
+                    </div>
+
+                     <div class="message-time">
+        {item.messageTime}
+    </div>
+
+                </div>
+
+            </template>
+
+        </div>
+    </template>
+
+</div>
+
+    <template if:true={nearestAppointment}>
+        <div class="appointment-card">
+            <lightning-icon
+                icon-name="utility:event"
+                size="small">
+            </lightning-icon>
+            <div class="appointment-content">
+                <div class="appointment-title">
+                    Upcoming Appointment Reminder
+                </div>
+                <div class="appointment-text">
+                    Your upcoming appointment with <strong>{appointmentDoctorName}</strong> is scheduled for <strong>{appointmentTime}</strong>.
+                </div>
+            </div>
+        </div>
+    </template>
+
+
+    <div class="start-chat-container">
+        <lightning-button
+            label="Chat With Doctor"
+            variant="brand"
+            onclick={handleOpenChat}>
+        </lightning-button>
+    </div>
+
+</template>
+        
+
+        <template if:true={isChatOpen}>
+
+            <div class="chat-container">
+
+               
+
+                <div class="header-section">
+
+                    <div class="doctor-header">
+
+                        <div class="doctor-details">
+
+                            <h1 class="doctor-name">
+
+                                <template if:true={selectedDoctorName}>
+                                    {selectedDoctorName}
+                                </template>
+
+                                <template if:false={selectedDoctorName}>
+                                    Waiting For Doctor...
+                                </template>
+
+                            </h1>
+
+                            <p class="specialization">
+
+                                <template if:true={selectedDoctorSpecialization}>
+                                    {selectedDoctorSpecialization}
+                                </template>
+
+                                <template if:false={selectedDoctorSpecialization}>
+                                    No Doctor Connected
+                                </template>
+
+                            </p>
+
+                        </div>
+
+                        <div class="header-right">
+
+                           <div class={statusClass}>
+
+    <span class={statusDotClass}></span>
+
+    <span>
+        {doctorStatusText}
+    </span>
+
+</div>
+
+                            <lightning-button
+                                label="End Chat"
+                                variant="destructive"
+                                onclick={handleEndChat}>
+                            </lightning-button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+               
+
+                <div class="active-chat-user">
+
+                    <lightning-icon
+                        icon-name="standard:person_account"
+                        size="small">
+                    </lightning-icon>
+
+                    <span class="patient-name">
+
+                        {patientName}
+
+                    </span>
+
+                </div>
+
+               
+
+                <template if:false={selectedDoctorId}>
+
+                    <div class="waiting-section">
+
+                        <lightning-icon
+                            icon-name="utility:chat"
+                            size="medium">
+                        </lightning-icon>
+
+                        <p>
+
+                            Waiting for doctor to start conversation...
+
+                        </p>
+
+                    </div>
+
+                </template>
+
+                <!-- CHAT BODY -->
+
+                <div class="chat-body">
+
+                    <template
+                        for:each={messages}
+                        for:item="msg">
+
+                        <div
+                            key={msg.id}
+                            class={msg.cssClass}>
+
+                            {msg.message}
+
+                        </div>
+
+                    </template>
+
+                </div>
+
+                
+                <div class="chat-footer">
+
+                    <lightning-textarea
+                        value={messageText}
+                        onchange={handleMessageChange}
+                        placeholder="Type your message...">
+                    </lightning-textarea>
+
+                    <div class="send-button">
+
+                        <lightning-button
+                            label="Send"
+                            variant="brand"
+                            onclick={handleSendMessage}
+                            disabled={isSendDisabled}>
+                        </lightning-button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </template>
+
+    </lightning-card>
+
+</template>
